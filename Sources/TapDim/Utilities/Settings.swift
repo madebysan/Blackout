@@ -28,6 +28,10 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(cooldown, forKey: "cooldown") }
     }
 
+    @Published var tapsRequired: Int {
+        didSet { UserDefaults.standard.set(tapsRequired, forKey: "tapsRequired") }
+    }
+
     private init() {
         let defaults = UserDefaults.standard
 
@@ -46,6 +50,9 @@ final class AppSettings: ObservableObject {
         if defaults.object(forKey: "cooldown") == nil {
             defaults.set(Constants.defaultCooldown, forKey: "cooldown")
         }
+        if defaults.object(forKey: "tapsRequired") == nil {
+            defaults.set(Constants.defaultTapsRequired, forKey: "tapsRequired")
+        }
 
         self.targetBrightness = defaults.float(forKey: "targetBrightness")
         self.isEnabled = defaults.bool(forKey: "isEnabled")
@@ -53,5 +60,6 @@ final class AppSettings: ObservableObject {
         self.tapSensitivity = defaults.float(forKey: "tapSensitivity")
         self.tapWindow = defaults.double(forKey: "tapWindow")
         self.cooldown = defaults.double(forKey: "cooldown")
+        self.tapsRequired = defaults.integer(forKey: "tapsRequired")
     }
 }

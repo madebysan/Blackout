@@ -9,7 +9,7 @@ final class TapDetector {
     private var reportBuffer: UnsafeMutablePointer<UInt8>?
 
     // Tap detection state
-    private var lastTapTime: TimeInterval = 0
+    private var tapTimes: [TimeInterval] = []
     private var lastTriggerTime: TimeInterval = 0
     private var isRunning = false
 
@@ -113,20 +113,26 @@ final class TapDetector {
         // Cooldown check — don't retrigger too fast
         guard (now - lastTriggerTime) > cooldown else { return }
 
-        // Check for double-tap: second spike within the tap window
-        let timeSinceLastTap = now - lastTapTime
+        let tapsRequired = settings.tapsRequired
 
-        if timeSinceLastTap < tapWindow && timeSinceLastTap > 0.05 {
-            // Double-tap detected!
+        // Remove stale taps outside the window
+        tapTimes = tapTimes.filter { (now - $0) < tapWindow }
+
+        // Minimum gap between taps to avoid counting the same impact twice
+        if let lastTap = tapTimes.last, (now - lastTap) < 0.05 {
+            return
+        }
+
+        tapTimes.append(now)
+
+        if tapTimes.count >= tapsRequired {
+            // Required taps detected!
             lastTriggerTime = now
-            lastTapTime = 0
+            tapTimes.removeAll()
 
             DispatchQueue.main.async { [weak self] in
                 self?.onDoubleTap?()
             }
-        } else {
-            // First tap — record time
-            lastTapTime = now
         }
     }
 }

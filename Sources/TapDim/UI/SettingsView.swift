@@ -55,6 +55,13 @@ struct SettingsView: View {
                     }
                 }
 
+                Picker("Taps to trigger", selection: $settings.tapsRequired) {
+                    Text("1 tap").tag(1)
+                    Text("2 taps").tag(2)
+                    Text("3 taps").tag(3)
+                }
+                .pickerStyle(.segmented)
+
                 HStack {
                     Text("Sensitivity")
                     Spacer()
@@ -108,6 +115,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 380, height: 620)
+        .frame(width: 380, height: 680)
     }
 }
