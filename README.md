@@ -10,14 +10,16 @@ Instant screen privacy for your MacBook.
 </p>
 
 <p align="center">
-v1.0 · macOS 14.6+ · Apple Silicon
+v1.0.0 · macOS 14.6+ · Apple Silicon
 </p>
 
 ---
 
+![Blackout](screenshot.png)
+
 Blackout uses the built-in accelerometer on Apple Silicon MacBooks to detect physical taps on the chassis. Tap to kill your screen. Tap again to bring it back.
 
-No permissions. No dock icon. Just a moon in your menu bar.
+No permissions. No dock icon. Just a lightbulb in your menu bar.
 
 ## Features
 
@@ -54,6 +56,14 @@ Download the latest DMG from [Releases](../../releases), open it, and drag Black
 swift build -c release
 .build/release/Blackout
 ```
+
+## Feedback
+
+Found a bug or have a feature idea? [Open an issue](../../issues).
+
+## License
+
+[MIT](LICENSE)
 
 ---
 
