@@ -52,9 +52,13 @@ final class TapDetector {
         }
 
         if openResult != kIOReturnSuccess {
-            startError = "Failed to open HID manager (code: \(openResult))"
+            if openResult == -536870203 { // kIOReturnExclusiveAccess
+                startError = "Another app (e.g. SlapMac) has exclusive access to the accelerometer. Quit it and relaunch Blackout."
+            } else {
+                startError = "Failed to open HID manager (code: \(openResult))"
+                permissionNeeded = true
+            }
             print("TapDetector: \(startError!)")
-            permissionNeeded = true
             isAvailable = false
             cleanup()
             return
