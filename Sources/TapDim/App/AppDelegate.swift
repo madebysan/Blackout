@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var enableMenuItem: NSMenuItem!
     private var settingsWindow: NSWindow?
     private var aboutWindow: NSWindow?
+    private var welcomeWindow: NSWindow?
     private let toggleManager = ToggleManager.shared
     private let settings = AppSettings.shared
     private let tapDetector = TapDetector.shared
@@ -21,7 +22,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupTapDetector()
         observeState()
 
-        // Re-check tap detector when app becomes active (e.g., after granting permission)
+        // Show welcome screen on first launch
+        if !UserDefaults.standard.bool(forKey: "hasLaunchedBefore") {
+            showWelcome()
+        }
+
+        // Re-check tap detector when app becomes active
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(appDidBecomeActive),
@@ -171,6 +177,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow = window
+    }
+
+    private func showWelcome() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 480),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Welcome to TapDim"
+        window.contentView = NSHostingView(rootView: WelcomeView(onDismiss: { [weak self] in
+            UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+            self?.welcomeWindow?.close()
+            self?.welcomeWindow = nil
+        }))
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        welcomeWindow = window
     }
 
     @objc private func openAbout() {
