@@ -1,2 +1,12 @@
 .build/
 .swiftpm/
+.claude/
+*.app/
+*.dmg
+*.zip
+*.icns
+*.iconset/
+*.png
+dmg-staging/
+checkpoint.json
+ralph-prompt.md
