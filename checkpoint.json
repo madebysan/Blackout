@@ -1,0 +1,35 @@
+{
+  "project": "TapDim",
+  "type": "swift-macos",
+  "started_at": "2026-03-25T13:50:00Z",
+  "current_phase": 6,
+  "current_phase_step": "complete",
+  "iteration": 1,
+  "last_clean_commit": "97d0922",
+  "phases": {
+    "1_implement": {
+      "status": "complete",
+      "features": [
+        {"name": "App shell + menu bar dropdown", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "Brightness control", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "Toggle state logic", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "Keyboard shortcut trigger", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "Settings window", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "About window", "status": "done", "commit": "73dde37", "attempts": 1},
+        {"name": "Launch at login", "status": "done", "commit": "73dde37", "attempts": 1}
+      ]
+    },
+    "2_test": {"status": "complete", "tests_passed": 5, "tests_failed": 0, "failures_deferred": []},
+    "3_qa": {"status": "skipped"},
+    "4_visual": {"status": "complete", "issues_found": 1, "issues_fixed": 1},
+    "5_security": {"status": "complete", "critical_issues": 0, "medium_issues": 0, "low_issues": 0, "secrets_found": false},
+    "6_verify": {"status": "complete", "final_type_check": "pass", "final_tests": "pass", "final_smoke_test": "pass", "report_path": "BUILD_REPORT.md"}
+  },
+  "decisions_made": [
+    {"iteration": 1, "feature": "All features", "decision": "Implemented all 7 features in single scaffold", "reasoning": "Tightly coupled, all simple"},
+    {"iteration": 1, "feature": "Settings window", "decision": "Increased height from 320 to 380", "reasoning": "Launch at login toggle was clipped"}
+  ],
+  "regressions_caught": [],
+  "deferred_to_v1": [],
+  "blocked": []
+}
