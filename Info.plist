@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>TapDim</string>
+    <string>Blackout</string>
     <key>CFBundleDisplayName</key>
-    <string>TapDim</string>
+    <string>Blackout</string>
     <key>CFBundleIdentifier</key>
-    <string>com.madebysan.TapDim</string>
+    <string>com.madebysan.blackout</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
     <key>CFBundleExecutable</key>
-    <string>TapDim</string>
+    <string>Blackout</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>

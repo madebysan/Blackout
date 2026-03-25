@@ -1,12 +1,12 @@
 <p align="center">
-<img src="https://img.icons8.com/emoji/128/sun-emoji.png" width="128" height="128" alt="TapDim icon">
+<img src="icon.png" width="128" height="128" alt="Blackout icon">
 </p>
 
-<h1 align="center">TapDim</h1>
+<h1 align="center">Blackout</h1>
 
 <p align="center">
-Double-tap your MacBook to dim. Double-tap to restore.<br>
-A lightweight menu bar utility for Apple Silicon MacBooks.
+Lights out with one tap.<br>
+Instant screen privacy for your MacBook.
 </p>
 
 <p align="center">
@@ -15,11 +15,9 @@ v1.0 · macOS 14.6+ · Apple Silicon
 
 ---
 
-## How It Works
+Blackout uses the built-in accelerometer on Apple Silicon MacBooks to detect physical taps on the chassis. Tap to kill your screen. Tap again to bring it back.
 
-TapDim uses the built-in accelerometer on Apple Silicon MacBooks to detect physical taps on the chassis. Tap to dim your screen to a configurable level. Tap again to restore.
-
-No permissions required. No dock icon. Just a sun in your menu bar.
+No permissions. No dock icon. Just a moon in your menu bar.
 
 ## Features
 
@@ -32,34 +30,30 @@ No permissions required. No dock icon. Just a sun in your menu bar.
 
 ## Install
 
-Download the latest DMG from [Releases](../../releases), open it, and drag TapDim to Applications.
+Download the latest DMG from [Releases](../../releases), open it, and drag Blackout to Applications.
 
 ## Settings
 
 | Setting | Default | Range |
 |---|---|---|
-| Target brightness | 10% | 0–50% |
-| Taps to trigger | 2 | 1–3 |
-| Sensitivity | 0.10g | 0.02–0.50g |
-| Tap window | 400ms | 200–800ms |
-| Cooldown | 0.3s | 0.3–3.0s |
+| Target brightness | 10% | 0-50% |
+| Taps to trigger | 1 | 1-3 |
+| Sensitivity | 0.10g | 0.02-0.50g |
+| Tap window | 200ms | 200-800ms |
+| Cooldown | 0.3s | 0.3-3.0s |
 
 ## Compatibility
 
 - macOS 14.6+ (Sonoma)
 - Apple Silicon only (M1, M2, M3, M4)
-- MacBooks only (no desktop Macs — no accelerometer)
+- MacBooks only (no desktop Macs)
 
 ## Build from Source
 
 ```bash
 swift build -c release
-.build/release/TapDim
+.build/release/Blackout
 ```
-
-## How It Works (Technical)
-
-TapDim accesses the undocumented MEMS accelerometer (Bosch BMI286) on Apple Silicon MacBooks via IOKit HID (`AppleSPUHIDDevice`, vendor usage page `0xFF00`). Screen brightness is controlled through the private `DisplayServices.framework` API.
 
 ---
 

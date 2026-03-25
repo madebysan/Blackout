@@ -48,12 +48,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "sun.min.fill", accessibilityDescription: "TapDim")
+            button.image = NSImage(systemSymbolName: "moon.fill", accessibilityDescription: "Blackout")
         }
 
         let menu = NSMenu()
 
-        statusMenuItem = NSMenuItem(title: "TapDim: Active", action: nil, keyEquivalent: "")
+        statusMenuItem = NSMenuItem(title: "Blackout: Active", action: nil, keyEquivalent: "")
         statusMenuItem.isEnabled = false
         menu.addItem(statusMenuItem)
 
@@ -73,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
 
-        let aboutItem = NSMenuItem(title: "About TapDim", action: #selector(openAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About Blackout", action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
 
@@ -144,12 +144,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateMenuIcon(isDimmed: Bool) {
-        let symbolName = isDimmed ? "sun.min" : "sun.min.fill"
-        statusItem.button?.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "TapDim")
+        let symbolName = isDimmed ? "moon" : "moon.fill"
+        statusItem.button?.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Blackout")
     }
 
     private func updateEnabledState(isEnabled: Bool) {
-        statusMenuItem.title = isEnabled ? "TapDim: Active" : "TapDim: Disabled"
+        statusMenuItem.title = isEnabled ? "Blackout: Active" : "Blackout: Disabled"
         enableMenuItem.title = isEnabled ? "Disable" : "Enable"
     }
 
@@ -170,7 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "TapDim Settings"
+        window.title = "Blackout Settings"
         window.contentView = NSHostingView(rootView: SettingsView())
         window.center()
         window.isReleasedWhenClosed = false
@@ -186,11 +186,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Welcome to TapDim"
+        window.title = "Welcome to Blackout"
         window.contentView = NSHostingView(rootView: WelcomeView(onDismiss: { [weak self] in
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
             self?.welcomeWindow?.close()
             self?.welcomeWindow = nil
+            self?.openSettings()
         }))
         window.center()
         window.isReleasedWhenClosed = false
@@ -212,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "About TapDim"
+        window.title = "About Blackout"
         window.contentView = NSHostingView(rootView: AboutView())
         window.center()
         window.isReleasedWhenClosed = false

@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "TapDim",
+    name: "Blackout",
     platforms: [
         .macOS(.v14)
     ],
@@ -12,15 +12,15 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "TapDim",
+            name: "Blackout",
             dependencies: [
                 "KeyboardShortcuts"
             ],
             path: "Sources/TapDim"
         ),
         .testTarget(
-            name: "TapDimTests",
-            dependencies: ["TapDim"],
+            name: "BlackoutTests",
+            dependencies: ["Blackout"],
             path: "Tests/TapDimTests"
         )
     ]

@@ -3,18 +3,18 @@ import SwiftUI
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "sun.min.fill")
+            Image(systemName: "moon.stars.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.yellow)
+                .foregroundStyle(.indigo)
 
-            Text("TapDim")
+            Text("Blackout")
                 .font(.title)
                 .fontWeight(.bold)
 
             Text("Version 1.0")
                 .foregroundStyle(.secondary)
 
-            Text("Double-tap your MacBook to dim.\nDouble-tap to restore.")
+            Text("Lights out with one tap.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 

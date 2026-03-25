@@ -107,7 +107,7 @@ struct SettingsView: View {
             }
 
             Section("General") {
-                Toggle("Enable TapDim", isOn: $settings.isEnabled)
+                Toggle("Enable Blackout", isOn: $settings.isEnabled)
                 Toggle("Launch at login", isOn: $settings.launchAtLogin)
                     .onChange(of: settings.launchAtLogin) { _, newValue in
                         LoginItemManager.shared.setEnabled(newValue)

@@ -21,11 +21,11 @@ struct WelcomeView: View {
                 .padding(.bottom, 16)
 
             // Title
-            Text("Welcome to TapDim")
+            Text("Welcome to Blackout")
                 .font(.system(size: 28, weight: .bold))
                 .padding(.bottom, 6)
 
-            Text("Tap your MacBook. Screen goes dark.\nTap again. It comes back.")
+            Text("Lights out with one tap.\nTap again to bring them back.")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -97,12 +97,12 @@ struct WelcomeView: View {
                             .foregroundStyle(sensorChecked ? .primary : .secondary)
 
                         if showGetStarted {
-                            Text("TapDim lives in your menu bar. Adjust sensitivity and tap count in Settings.")
+                            Text("Blackout lives in your menu bar. Adjust sensitivity and tap count in Settings.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
                             Button(action: onDismiss) {
-                                Text("Get Started")
+                                Text("Configure Settings")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)
