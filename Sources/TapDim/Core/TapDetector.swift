@@ -6,7 +6,7 @@ final class TapDetector {
     static let shared = TapDetector()
 
     private var manager: IOHIDManager?
-    private var reportBuffer = [UInt8](repeating: 0, count: 64)
+    private var reportBuffer: UnsafeMutablePointer<UInt8>?
 
     // Tap detection state
     private var lastTapTime: TimeInterval = 0
@@ -36,43 +36,35 @@ final class TapDetector {
         ]
         IOHIDManagerSetDeviceMatching(manager, matchDict as CFDictionary)
 
+        // Register callback BEFORE opening (required for reports to flow)
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        IOHIDManagerRegisterInputReportCallback(manager, hidReportCallback, context)
+
         // Schedule on main run loop
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
 
-        // Try to open — this is where Input Monitoring permission is checked
-        let openResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
+        // Open with SeizeDevice — this is the key to getting reports on Apple Silicon
+        let openResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeSeizeDevice))
         if openResult != kIOReturnSuccess {
-            print("TapDetector: Failed to open IOHIDManager (result: \(openResult)). Input Monitoring permission may be needed.")
-            permissionNeeded = true
+            print("TapDetector: Failed to open IOHIDManager (result: \(openResult))")
+            permissionNeeded = (openResult == -536870174) // kIOReturnNotPermitted
             isAvailable = false
             return
         }
 
-        // Get matched devices
+        // Verify devices matched
         guard let deviceSet = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>,
-              let device = deviceSet.first else {
-            print("TapDetector: No accelerometer device found. This Mac may not have one.")
+              !deviceSet.isEmpty else {
+            print("TapDetector: No accelerometer device found")
             isAvailable = false
             IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
             return
         }
 
-        // Register input report callback
-        let context = Unmanaged.passUnretained(self).toOpaque()
-        reportBuffer.withUnsafeMutableBufferPointer { buffer in
-            IOHIDDeviceRegisterInputReportCallback(
-                device,
-                buffer.baseAddress!,
-                buffer.count,
-                hidReportCallback,
-                context
-            )
-        }
-
         isRunning = true
         isAvailable = true
         permissionNeeded = false
-        print("TapDetector: Accelerometer active")
+        print("TapDetector: Accelerometer active (\(deviceSet.count) devices)")
     }
 
     func stop() {
@@ -80,18 +72,25 @@ final class TapDetector {
         IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
         IOHIDManagerUnscheduleFromRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
         self.manager = nil
+        reportBuffer?.deallocate()
+        reportBuffer = nil
         isRunning = false
-        print("TapDetector: Stopped")
     }
 
-    fileprivate func processReport(_ report: UnsafePointer<UInt8>, length: Int) {
+    fileprivate func processReport(_ report: UnsafeMutablePointer<UInt8>, length: Int) {
         guard length >= 18, settings.isEnabled else { return }
 
         // Parse X, Y, Z from the 22-byte HID report
         // int32 little-endian at offsets 6, 10, 14
-        let x = report.advanced(by: 6).withMemoryRebound(to: Int32.self, capacity: 1) { Int32(littleEndian: $0.pointee) }
-        let y = report.advanced(by: 10).withMemoryRebound(to: Int32.self, capacity: 1) { Int32(littleEndian: $0.pointee) }
-        let z = report.advanced(by: 14).withMemoryRebound(to: Int32.self, capacity: 1) { Int32(littleEndian: $0.pointee) }
+        var xRaw: Int32 = 0
+        var yRaw: Int32 = 0
+        var zRaw: Int32 = 0
+        memcpy(&xRaw, report.advanced(by: 6), 4)
+        memcpy(&yRaw, report.advanced(by: 10), 4)
+        memcpy(&zRaw, report.advanced(by: 14), 4)
+        let x = Int32(littleEndian: xRaw)
+        let y = Int32(littleEndian: yRaw)
+        let z = Int32(littleEndian: zRaw)
 
         // Convert to g-force
         let scale = 65536.0
@@ -101,7 +100,7 @@ final class TapDetector {
 
         // Compute magnitude (subtract ~1g gravity baseline)
         let magnitude = sqrt(gX * gX + gY * gY + gZ * gZ)
-        let deviation = abs(magnitude - 1.0) // deviation from resting state (1g gravity)
+        let deviation = abs(magnitude - 1.0)
 
         let now = ProcessInfo.processInfo.systemUptime
         let threshold = Double(settings.tapSensitivity)
@@ -120,7 +119,7 @@ final class TapDetector {
         if timeSinceLastTap < tapWindow && timeSinceLastTap > 0.05 {
             // Double-tap detected!
             lastTriggerTime = now
-            lastTapTime = 0 // reset so next tap starts fresh
+            lastTapTime = 0
 
             DispatchQueue.main.async { [weak self] in
                 self?.onDoubleTap?()
