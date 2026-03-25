@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var aboutWindow: NSWindow?
     private var welcomeWindow: NSWindow?
+    private var diagnosticsWindow: NSWindow?
     private let toggleManager = ToggleManager.shared
     private let settings = AppSettings.shared
     private let tapDetector = TapDetector.shared
@@ -76,6 +77,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let aboutItem = NSMenuItem(title: "About Blackout", action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
+
+        let diagItem = NSMenuItem(title: "Diagnostics...", action: #selector(openDiagnostics), keyEquivalent: "")
+        diagItem.target = self
+        menu.addItem(diagItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -198,6 +203,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         welcomeWindow = window
+    }
+
+    @objc private func openDiagnostics() {
+        if let window = diagnosticsWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 480),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Blackout Diagnostics"
+        window.contentView = NSHostingView(rootView: DiagnosticsView())
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        diagnosticsWindow = window
     }
 
     @objc private func openAbout() {

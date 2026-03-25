@@ -20,6 +20,8 @@ final class TapDetector {
     private(set) var isAvailable = false
     private(set) var permissionNeeded = false
     private(set) var startError: String?
+    private var reportCount = 0
+    private var maxDeviation: Double = 0
 
     private init() {}
 
@@ -106,6 +108,17 @@ final class TapDetector {
 
         let magnitude = sqrt(gX * gX + gY * gY + gZ * gZ)
         let deviation = abs(magnitude - 1.0)
+
+        reportCount += 1
+        if deviation > maxDeviation { maxDeviation = deviation }
+
+        // Log every 500th report + any significant deviations
+        if reportCount % 500 == 0 {
+            print("TapDetector: report #\(reportCount) | baseline dev=\(String(format:"%.4f", deviation)) | max seen=\(String(format:"%.4f", maxDeviation))")
+        }
+        if deviation > 0.03 {
+            print("TapDetector: SPIKE dev=\(String(format:"%.4f", deviation)) | X=\(String(format:"%.3f",gX)) Y=\(String(format:"%.3f",gY)) Z=\(String(format:"%.3f",gZ)) | threshold=\(String(format:"%.2f", Double(settings.tapSensitivity)))")
+        }
 
         let now = ProcessInfo.processInfo.systemUptime
         let threshold = Double(settings.tapSensitivity)
