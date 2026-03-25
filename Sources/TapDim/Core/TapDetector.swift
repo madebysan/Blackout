@@ -6,84 +6,89 @@ final class TapDetector {
     static let shared = TapDetector()
 
     private var manager: IOHIDManager?
-    private var reportBuffer: UnsafeMutablePointer<UInt8>?
 
     // Tap detection state
     private var tapTimes: [TimeInterval] = []
     private var lastTriggerTime: TimeInterval = 0
-    private var lastSpikeTime: TimeInterval = 0  // tracks ongoing vibration from a single tap
-    private var isInSpike = false                  // true while vibrations from a tap are still happening
+    private var lastSpikeTime: TimeInterval = 0
+    private var isInSpike = false
     private var isRunning = false
 
-    // Callback when a double-tap is detected
+    // Callback when a tap trigger is detected
     var onDoubleTap: (() -> Void)?
-
-    private let settings = AppSettings.shared
 
     private(set) var isAvailable = false
     private(set) var permissionNeeded = false
+    private(set) var startError: String?
 
     private init() {}
 
     func start() {
         guard !isRunning else { return }
 
-        manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
-        guard let manager = manager else { return }
+        let mgr = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        manager = mgr
 
-        // Match the Apple Silicon accelerometer: vendor usage page 0xFF00, usage 3
         let matchDict: [String: Any] = [
             kIOHIDPrimaryUsagePageKey as String: 0xFF00,
             kIOHIDPrimaryUsageKey as String: 3
         ]
-        IOHIDManagerSetDeviceMatching(manager, matchDict as CFDictionary)
+        IOHIDManagerSetDeviceMatching(mgr, matchDict as CFDictionary)
 
-        // Register callback BEFORE opening (required for reports to flow)
+        // Register callback BEFORE opening
         let context = Unmanaged.passUnretained(self).toOpaque()
-        IOHIDManagerRegisterInputReportCallback(manager, hidReportCallback, context)
+        IOHIDManagerRegisterInputReportCallback(mgr, hidReportCallback, context)
 
         // Schedule on main run loop
-        IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
+        IOHIDManagerScheduleWithRunLoop(mgr, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
 
-        // Open with SeizeDevice — this is the key to getting reports on Apple Silicon
-        let openResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeSeizeDevice))
+        // Try SeizeDevice first (required on some Macs), fall back to normal open
+        var openResult = IOHIDManagerOpen(mgr, IOOptionBits(kIOHIDOptionsTypeSeizeDevice))
         if openResult != kIOReturnSuccess {
-            print("TapDetector: Failed to open IOHIDManager (result: \(openResult))")
-            permissionNeeded = (openResult == -536870174) // kIOReturnNotPermitted
+            print("TapDetector: SeizeDevice failed (\(openResult)), trying normal open...")
+            openResult = IOHIDManagerOpen(mgr, IOOptionBits(kIOHIDOptionsTypeNone))
+        }
+
+        if openResult != kIOReturnSuccess {
+            startError = "Failed to open HID manager (code: \(openResult))"
+            print("TapDetector: \(startError!)")
+            permissionNeeded = true
             isAvailable = false
+            cleanup()
             return
         }
 
-        // Verify devices matched
-        guard let deviceSet = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>,
-              !deviceSet.isEmpty else {
-            print("TapDetector: No accelerometer device found")
+        // Check if any devices matched
+        if let deviceSet = IOHIDManagerCopyDevices(mgr) as? Set<IOHIDDevice>, !deviceSet.isEmpty {
+            isRunning = true
+            isAvailable = true
+            permissionNeeded = false
+            startError = nil
+            print("TapDetector: Accelerometer active (\(deviceSet.count) devices)")
+        } else {
+            startError = "No accelerometer device found on this Mac"
+            print("TapDetector: \(startError!)")
             isAvailable = false
-            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-            return
+            cleanup()
         }
-
-        isRunning = true
-        isAvailable = true
-        permissionNeeded = false
-        print("TapDetector: Accelerometer active (\(deviceSet.count) devices)")
     }
 
     func stop() {
-        guard isRunning, let manager = manager else { return }
-        IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-        IOHIDManagerUnscheduleFromRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
-        self.manager = nil
-        reportBuffer?.deallocate()
-        reportBuffer = nil
+        cleanup()
         isRunning = false
     }
 
+    private func cleanup() {
+        guard let mgr = manager else { return }
+        IOHIDManagerClose(mgr, IOOptionBits(kIOHIDOptionsTypeNone))
+        IOHIDManagerUnscheduleFromRunLoop(mgr, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
+        manager = nil
+    }
+
     fileprivate func processReport(_ report: UnsafeMutablePointer<UInt8>, length: Int) {
+        let settings = AppSettings.shared
         guard length >= 18, settings.isEnabled else { return }
 
-        // Parse X, Y, Z from the 22-byte HID report
-        // int32 little-endian at offsets 6, 10, 14
         var xRaw: Int32 = 0
         var yRaw: Int32 = 0
         var zRaw: Int32 = 0
@@ -94,13 +99,11 @@ final class TapDetector {
         let y = Int32(littleEndian: yRaw)
         let z = Int32(littleEndian: zRaw)
 
-        // Convert to g-force
         let scale = 65536.0
         let gX = Double(x) / scale
         let gY = Double(y) / scale
         let gZ = Double(z) / scale
 
-        // Compute magnitude (subtract ~1g gravity baseline)
         let magnitude = sqrt(gX * gX + gY * gY + gZ * gZ)
         let deviation = abs(magnitude - 1.0)
 
@@ -109,28 +112,22 @@ final class TapDetector {
         let tapWindow = settings.tapWindow
         let cooldown = settings.cooldown
 
-        // If we're above threshold, this is part of a spike (tap or aftershock)
         if deviation > threshold {
             lastSpikeTime = now
             if !isInSpike {
-                // New spike started — but don't count it yet, wait for it to settle
                 isInSpike = true
             }
             return
         }
 
-        // Below threshold — check if a spike just ended (settled for 120ms+)
-        let settleTime = 0.12 // seconds the signal must stay below threshold to count as "settled"
+        let settleTime = 0.12
         if isInSpike && (now - lastSpikeTime) > settleTime {
-            // Spike settled — count this as one physical tap
             isInSpike = false
 
-            // Cooldown check
             guard (now - lastTriggerTime) > cooldown else { return }
 
             let tapsRequired = settings.tapsRequired
 
-            // Remove stale taps outside the window
             tapTimes = tapTimes.filter { (now - $0) < tapWindow }
             tapTimes.append(lastSpikeTime)
 
@@ -146,7 +143,6 @@ final class TapDetector {
     }
 }
 
-// C-style callback for IOKit HID
 private func hidReportCallback(
     context: UnsafeMutableRawPointer?,
     result: IOReturn,

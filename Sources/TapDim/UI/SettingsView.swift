@@ -3,8 +3,9 @@ import KeyboardShortcuts
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
-    @State private var accelerometerAvailable = TapDetector.shared.isAvailable
-    @State private var permissionNeeded = TapDetector.shared.permissionNeeded
+    @State private var accelerometerAvailable = false
+    @State private var permissionNeeded = false
+    @State private var errorMessage: String?
 
     var body: some View {
         Form {
@@ -51,8 +52,15 @@ struct SettingsView: View {
                     HStack {
                         Image(systemName: "info.circle.fill")
                             .foregroundStyle(.secondary)
-                        Text("Accelerometer not detected")
-                            .foregroundStyle(.secondary)
+                        VStack(alignment: .leading) {
+                            Text("Accelerometer not detected")
+                                .foregroundStyle(.secondary)
+                            if let errorMessage = errorMessage {
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
 
@@ -118,8 +126,10 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 380, height: 680)
         .onAppear {
-            accelerometerAvailable = TapDetector.shared.isAvailable
-            permissionNeeded = TapDetector.shared.permissionNeeded
+            let detector = TapDetector.shared
+            accelerometerAvailable = detector.isAvailable
+            permissionNeeded = detector.permissionNeeded
+            errorMessage = detector.startError
         }
     }
 }
