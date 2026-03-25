@@ -11,6 +11,8 @@ final class TapDetector {
     // Tap detection state
     private var tapTimes: [TimeInterval] = []
     private var lastTriggerTime: TimeInterval = 0
+    private var lastSpikeTime: TimeInterval = 0  // tracks ongoing vibration from a single tap
+    private var isInSpike = false                  // true while vibrations from a tap are still happening
     private var isRunning = false
 
     // Callback when a double-tap is detected
@@ -107,31 +109,38 @@ final class TapDetector {
         let tapWindow = settings.tapWindow
         let cooldown = settings.cooldown
 
-        // Check if this is a tap (spike above threshold)
-        guard deviation > threshold else { return }
-
-        // Cooldown check — don't retrigger too fast
-        guard (now - lastTriggerTime) > cooldown else { return }
-
-        let tapsRequired = settings.tapsRequired
-
-        // Remove stale taps outside the window
-        tapTimes = tapTimes.filter { (now - $0) < tapWindow }
-
-        // Minimum gap between taps to avoid counting the same impact twice
-        if let lastTap = tapTimes.last, (now - lastTap) < 0.05 {
+        // If we're above threshold, this is part of a spike (tap or aftershock)
+        if deviation > threshold {
+            lastSpikeTime = now
+            if !isInSpike {
+                // New spike started — but don't count it yet, wait for it to settle
+                isInSpike = true
+            }
             return
         }
 
-        tapTimes.append(now)
+        // Below threshold — check if a spike just ended (settled for 120ms+)
+        let settleTime = 0.12 // seconds the signal must stay below threshold to count as "settled"
+        if isInSpike && (now - lastSpikeTime) > settleTime {
+            // Spike settled — count this as one physical tap
+            isInSpike = false
 
-        if tapTimes.count >= tapsRequired {
-            // Required taps detected!
-            lastTriggerTime = now
-            tapTimes.removeAll()
+            // Cooldown check
+            guard (now - lastTriggerTime) > cooldown else { return }
 
-            DispatchQueue.main.async { [weak self] in
-                self?.onDoubleTap?()
+            let tapsRequired = settings.tapsRequired
+
+            // Remove stale taps outside the window
+            tapTimes = tapTimes.filter { (now - $0) < tapWindow }
+            tapTimes.append(lastSpikeTime)
+
+            if tapTimes.count >= tapsRequired {
+                lastTriggerTime = now
+                tapTimes.removeAll()
+
+                DispatchQueue.main.async { [weak self] in
+                    self?.onDoubleTap?()
+                }
             }
         }
     }
