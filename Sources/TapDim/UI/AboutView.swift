@@ -3,9 +3,12 @@ import SwiftUI
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.indigo)
+            if let appIcon = NSApp.applicationIconImage {
+                Image(nsImage: appIcon)
+                    .resizable()
+                    .frame(width: 96, height: 96)
+                    .cornerRadius(20)
+            }
 
             Text("Blackout")
                 .font(.title)
@@ -27,6 +30,6 @@ struct AboutView: View {
                 .foregroundStyle(.blue)
         }
         .padding(32)
-        .frame(width: 320, height: 340)
+        .frame(width: 320, height: 380)
     }
 }

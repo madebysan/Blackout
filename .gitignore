@@ -6,7 +6,8 @@
 *.zip
 *.icns
 *.iconset/
-*.png
+AppIcon.png
+AppIcon*.png
 dmg-staging/
 checkpoint.json
 ralph-prompt.md

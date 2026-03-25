@@ -15,10 +15,13 @@ struct WelcomeView: View {
                 .frame(height: 40)
 
             // Icon
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.indigo)
-                .padding(.bottom, 16)
+            if let appIcon = NSApp.applicationIconImage {
+                Image(nsImage: appIcon)
+                    .resizable()
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(18)
+                    .padding(.bottom, 8)
+            }
 
             // Title
             Text("Welcome to Blackout")
