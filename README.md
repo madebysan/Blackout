@@ -30,9 +30,9 @@ No permissions. No dock icon. Just a lightbulb in your menu bar.
 - **Launch at login** — optional auto-start
 - **Zero permissions** — no accessibility, no input monitoring, no root
 
-## Install
+## Download
 
-Download the latest DMG from [Releases](../../releases), open it, and drag Blackout to Applications.
+**[Download Blackout v1.0.0](../../releases/latest/download/Blackout.dmg)** — open the DMG and drag Blackout to Applications.
 
 ## Settings
 

@@ -3,7 +3,8 @@ import KeyboardShortcuts
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
-    private let tapDetector = TapDetector.shared
+    @State private var accelerometerAvailable = TapDetector.shared.isAvailable
+    @State private var permissionNeeded = TapDetector.shared.permissionNeeded
 
     var body: some View {
         Form {
@@ -23,14 +24,14 @@ struct SettingsView: View {
             }
 
             Section("Tap Detection") {
-                if tapDetector.isAvailable {
+                if accelerometerAvailable {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                         Text("Accelerometer active")
                             .foregroundStyle(.secondary)
                     }
-                } else if tapDetector.permissionNeeded {
+                } else if permissionNeeded {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
@@ -48,9 +49,9 @@ struct SettingsView: View {
                     }
                 } else {
                     HStack {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.red)
-                        Text("No accelerometer found")
+                        Image(systemName: "info.circle.fill")
+                            .foregroundStyle(.secondary)
+                        Text("Accelerometer not detected")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -116,5 +117,9 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 380, height: 680)
+        .onAppear {
+            accelerometerAvailable = TapDetector.shared.isAvailable
+            permissionNeeded = TapDetector.shared.permissionNeeded
+        }
     }
 }

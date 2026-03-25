@@ -2,11 +2,9 @@ import SwiftUI
 
 struct WelcomeView: View {
     @ObservedObject private var settings = AppSettings.shared
-    private let tapDetector = TapDetector.shared
     @State private var sensorChecked = false
     @State private var sensorAvailable = false
     @State private var tapDetected = false
-    @State private var showGetStarted = false
     var onDismiss: () -> Void
 
     var body: some View {
@@ -91,7 +89,7 @@ struct WelcomeView: View {
                 // Step 2: Ready
                 StepRow(
                     number: 2,
-                    isComplete: false,
+                    isComplete: tapDetected,
                     isActive: sensorChecked
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -99,7 +97,7 @@ struct WelcomeView: View {
                             .font(.headline)
                             .foregroundStyle(sensorChecked ? .primary : .secondary)
 
-                        if showGetStarted {
+                        if sensorChecked {
                             Text("Blackout lives in your menu bar. Adjust sensitivity and tap count in Settings.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -121,24 +119,19 @@ struct WelcomeView: View {
         }
         .frame(width: 400, height: 480)
         .onAppear {
-            // Check sensor after a brief delay for visual feedback
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                sensorAvailable = tapDetector.isAvailable
+                let detector = TapDetector.shared
+                sensorAvailable = detector.isAvailable
                 sensorChecked = true
 
                 if sensorAvailable {
-                    // Listen for a tap
-                    let originalCallback = tapDetector.onDoubleTap
-                    tapDetector.onDoubleTap = {
-                        tapDetected = true
+                    let originalCallback = detector.onDoubleTap
+                    detector.onDoubleTap = {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            showGetStarted = true
+                            tapDetected = true
                         }
-                        // Restore original callback
-                        tapDetector.onDoubleTap = originalCallback
+                        detector.onDoubleTap = originalCallback
                     }
-                } else {
-                    showGetStarted = true
                 }
             }
         }
