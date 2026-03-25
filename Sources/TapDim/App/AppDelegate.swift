@@ -11,11 +11,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var aboutWindow: NSWindow?
     private let toggleManager = ToggleManager.shared
     private let settings = AppSettings.shared
+    private let tapDetector = TapDetector.shared
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
         setupKeyboardShortcut()
+        setupTapDetector()
         observeState()
     }
 
@@ -62,6 +64,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func setupTapDetector() {
+        tapDetector.onDoubleTap = { [weak self] in
+            self?.toggleManager.toggle()
+        }
+        tapDetector.start()
+    }
+
     private func observeState() {
         toggleManager.$isDimmed
             .receive(on: DispatchQueue.main)
@@ -100,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 350, height: 380),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 620),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
