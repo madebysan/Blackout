@@ -49,6 +49,7 @@ Download the latest DMG from [Releases](../../releases), open it, and drag Black
 - macOS 14.6+ (Sonoma)
 - Apple Silicon only (M1, M2, M3, M4)
 - MacBooks only (no desktop Macs)
+- Built-in display only — does not work when connected to an external monitor
 
 ## Build from Source
 
