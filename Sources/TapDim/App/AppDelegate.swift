@@ -6,6 +6,7 @@ import Combine
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var statusMenuItem: NSMenuItem!
+    private var tapStatusMenuItem: NSMenuItem!
     private var enableMenuItem: NSMenuItem!
     private var settingsWindow: NSWindow?
     private var aboutWindow: NSWindow?
@@ -19,6 +20,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupKeyboardShortcut()
         setupTapDetector()
         observeState()
+
+        // Re-check tap detector when app becomes active (e.g., after granting permission)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private func appDidBecomeActive() {
+        if !tapDetector.isAvailable {
+            tapDetector.stop()
+            tapDetector.start()
+            updateTapStatus()
+        }
     }
 
     private func setupStatusItem() {
@@ -33,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenuItem = NSMenuItem(title: "TapDim: Active", action: nil, keyEquivalent: "")
         statusMenuItem.isEnabled = false
         menu.addItem(statusMenuItem)
+
+        tapStatusMenuItem = NSMenuItem(title: "Tap: Checking...", action: nil, keyEquivalent: "")
+        tapStatusMenuItem.isEnabled = false
+        menu.addItem(tapStatusMenuItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -69,6 +90,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.toggleManager.toggle()
         }
         tapDetector.start()
+        updateTapStatus()
+    }
+
+    private func updateTapStatus() {
+        if tapDetector.isAvailable {
+            tapStatusMenuItem.title = "Tap Detection: Active"
+            tapStatusMenuItem.image = NSImage(systemSymbolName: "hand.tap.fill", accessibilityDescription: nil)
+            tapStatusMenuItem.action = nil
+            tapStatusMenuItem.target = nil
+            tapStatusMenuItem.isEnabled = false
+        } else if tapDetector.permissionNeeded {
+            tapStatusMenuItem.title = "Tap Detection: Grant Permission..."
+            tapStatusMenuItem.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: nil)
+            tapStatusMenuItem.action = #selector(openInputMonitoringSettings)
+            tapStatusMenuItem.target = self
+            tapStatusMenuItem.isEnabled = true
+        } else {
+            tapStatusMenuItem.title = "Tap Detection: Unavailable"
+            tapStatusMenuItem.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: nil)
+            tapStatusMenuItem.action = nil
+            tapStatusMenuItem.target = nil
+            tapStatusMenuItem.isEnabled = false
+        }
+    }
+
+    @objc private func openInputMonitoringSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func observeState() {
