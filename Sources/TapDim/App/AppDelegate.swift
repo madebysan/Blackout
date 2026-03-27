@@ -35,14 +35,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didBecomeActiveNotification,
             object: nil
         )
+
+        // Update menu when tap detector state changes (e.g. after motion restriction detected)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(tapDetectorStateDidChange),
+            name: .tapDetectorStateChanged,
+            object: nil
+        )
     }
 
     @objc private func appDidBecomeActive() {
-        if !tapDetector.isAvailable {
+        if !tapDetector.isAvailable && !tapDetector.isMotionRestricted {
             tapDetector.stop()
             tapDetector.start()
             updateTapStatus()
         }
+    }
+
+    @objc private func tapDetectorStateDidChange() {
+        updateTapStatus()
     }
 
     private func setupStatusItem() {
@@ -108,6 +120,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if tapDetector.isAvailable {
             tapStatusMenuItem.title = "Tap Detection: Active"
             tapStatusMenuItem.image = NSImage(systemSymbolName: "hand.tap.fill", accessibilityDescription: nil)
+            tapStatusMenuItem.action = nil
+            tapStatusMenuItem.target = nil
+            tapStatusMenuItem.isEnabled = false
+        } else if tapDetector.isMotionRestricted {
+            tapStatusMenuItem.title = "Tap Detection: Blocked by macOS"
+            tapStatusMenuItem.image = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: nil)
             tapStatusMenuItem.action = nil
             tapStatusMenuItem.target = nil
             tapStatusMenuItem.isEnabled = false

@@ -6,6 +6,7 @@ final class TapDetector {
     static let shared = TapDetector()
 
     private var manager: IOHIDManager?
+    private var hidQueue: DispatchQueue?
 
     // Tap detection state
     private var tapTimes: [TimeInterval] = []
@@ -19,6 +20,7 @@ final class TapDetector {
 
     private(set) var isAvailable = false
     private(set) var permissionNeeded = false
+    private(set) var isMotionRestricted = false
     private(set) var startError: String?
     private(set) var reportCount = 0
     private(set) var maxDeviation: Double = 0
@@ -27,8 +29,45 @@ final class TapDetector {
 
     private init() {}
 
+    /// Check if the accelerometer interface is marked as motion-restricted by macOS.
+    /// macOS 26+ blocks third-party access to the accelerometer via this flag.
+    private func checkMotionRestricted() -> Bool {
+        guard let matching = IOServiceMatching("AppleSPUHIDInterface") else { return false }
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == 0 else { return false }
+        defer { IOObjectRelease(iterator) }
+
+        var service = IOIteratorNext(iterator)
+        while service != 0 {
+            defer { IOObjectRelease(service); service = IOIteratorNext(iterator) }
+
+            var nameBuffer = [CChar](repeating: 0, count: 128)
+            IORegistryEntryGetName(service, &nameBuffer)
+            let name = String(cString: nameBuffer)
+
+            if name == "accel" {
+                var props: Unmanaged<CFMutableDictionary>?
+                IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0)
+                if let dict = props?.takeRetainedValue() as? [String: Any],
+                   let restricted = dict["motionRestrictedService"] as? Bool {
+                    return restricted
+                }
+            }
+        }
+        return false
+    }
+
     func start() {
         guard !isRunning else { return }
+
+        // Check for macOS 26+ motion restriction before attempting to open
+        if checkMotionRestricted() {
+            isMotionRestricted = true
+            startError = "macOS has restricted accelerometer access. Tap detection is unavailable — use the keyboard shortcut instead."
+            print("TapDetector: \(startError!)")
+            isAvailable = false
+            return
+        }
 
         let mgr = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         manager = mgr
@@ -43,8 +82,10 @@ final class TapDetector {
         let context = Unmanaged.passUnretained(self).toOpaque()
         IOHIDManagerRegisterInputReportCallback(mgr, hidReportCallback, context)
 
-        // Schedule on main run loop
-        IOHIDManagerScheduleWithRunLoop(mgr, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
+        // Use dispatch queue API (required on macOS 26+, works on older versions too)
+        let queue = DispatchQueue(label: "com.madebysan.blackout.hid", qos: .userInteractive)
+        hidQueue = queue
+        IOHIDManagerSetDispatchQueue(mgr, queue)
 
         // Try SeizeDevice first (required on some Macs), fall back to normal open
         var openResult = IOHIDManagerOpen(mgr, IOOptionBits(kIOHIDOptionsTypeSeizeDevice))
@@ -66,13 +107,30 @@ final class TapDetector {
             return
         }
 
+        // Activate the manager (required when using dispatch queue)
+        IOHIDManagerActivate(mgr)
+
         // Check if any devices matched
         if let deviceSet = IOHIDManagerCopyDevices(mgr) as? Set<IOHIDDevice>, !deviceSet.isEmpty {
             isRunning = true
             isAvailable = true
             permissionNeeded = false
+            isMotionRestricted = false
             startError = nil
             print("TapDetector: Accelerometer active (\(deviceSet.count) devices)")
+
+            // Verify data is actually streaming after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                guard let self = self else { return }
+                if self.reportCount == 0 && self.isRunning {
+                    // Device opened but no data — likely motion-restricted
+                    self.isAvailable = false
+                    self.isMotionRestricted = true
+                    self.startError = "macOS has restricted accelerometer access. Tap detection is unavailable — use the keyboard shortcut instead."
+                    print("TapDetector: No reports after 2s — accelerometer is restricted")
+                    NotificationCenter.default.post(name: .tapDetectorStateChanged, object: nil)
+                }
+            }
         } else {
             startError = "No accelerometer device found on this Mac"
             print("TapDetector: \(startError!)")
@@ -89,8 +147,8 @@ final class TapDetector {
     private func cleanup() {
         guard let mgr = manager else { return }
         IOHIDManagerClose(mgr, IOOptionBits(kIOHIDOptionsTypeNone))
-        IOHIDManagerUnscheduleFromRunLoop(mgr, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
         manager = nil
+        hidQueue = nil
     }
 
     fileprivate func processReport(_ report: UnsafeMutablePointer<UInt8>, length: Int) {
@@ -154,6 +212,10 @@ final class TapDetector {
             }
         }
     }
+}
+
+extension Notification.Name {
+    static let tapDetectorStateChanged = Notification.Name("tapDetectorStateChanged")
 }
 
 private func hidReportCallback(

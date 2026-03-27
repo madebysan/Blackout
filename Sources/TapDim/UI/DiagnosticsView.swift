@@ -122,6 +122,7 @@ struct DiagnosticsView: View {
             let detector = TapDetector.shared
             addLog("isAvailable: \(detector.isAvailable)")
             addLog("permissionNeeded: \(detector.permissionNeeded)")
+            addLog("isMotionRestricted: \(detector.isMotionRestricted)")
             addLog("startError: \(detector.startError ?? "none")")
             addLog("Reports received so far: \(detector.reportCount)")
             addLog("Max deviation seen: \(String(format: "%.4f", detector.maxDeviation))g")
@@ -133,7 +134,7 @@ struct DiagnosticsView: View {
             addLog("TAP YOUR MACBOOK NOW!")
             let startCount = detector.reportCount
             let startSpikes = detector.spikeCount
-            let startMax = detector.maxDeviation
+            _ = detector.maxDeviation
             addLog("Starting report count: \(startCount)")
 
             // Check every second for 5 seconds

@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
     @State private var accelerometerAvailable = false
     @State private var permissionNeeded = false
+    @State private var motionRestricted = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -31,6 +32,20 @@ struct SettingsView: View {
                             .foregroundStyle(.green)
                         Text("Accelerometer active")
                             .foregroundStyle(.secondary)
+                    }
+                } else if motionRestricted {
+                    HStack(alignment: .top) {
+                        Image(systemName: "lock.fill")
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Blocked by macOS")
+                            Text("macOS 26+ restricts accelerometer access. Tap detection is unavailable on this version.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("Use the keyboard shortcut below instead.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 } else if permissionNeeded {
                     HStack {
@@ -126,10 +141,18 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 380, height: 680)
         .onAppear {
-            let detector = TapDetector.shared
-            accelerometerAvailable = detector.isAvailable
-            permissionNeeded = detector.permissionNeeded
-            errorMessage = detector.startError
+            updateDetectorState()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .tapDetectorStateChanged)) { _ in
+            updateDetectorState()
+        }
+    }
+
+    private func updateDetectorState() {
+        let detector = TapDetector.shared
+        accelerometerAvailable = detector.isAvailable
+        permissionNeeded = detector.permissionNeeded
+        motionRestricted = detector.isMotionRestricted
+        errorMessage = detector.startError
     }
 }
