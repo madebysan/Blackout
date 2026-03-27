@@ -10,7 +10,7 @@ Instant screen privacy for your MacBook.
 </p>
 
 <p align="center">
-v1.0.0 · macOS 14.6+ · Apple Silicon
+v1.1.0 · macOS 14.6+ · Apple Silicon
 </p>
 
 ---
@@ -32,7 +32,7 @@ No permissions. No dock icon. Just a lightbulb in your menu bar.
 
 ## Download
 
-**[Download Blackout v1.0.0](../../releases/latest/download/Blackout.dmg)** — open the DMG and drag Blackout to Applications.
+**[Download Blackout v1.1.0](../../releases/latest/download/Blackout.dmg)** — open the DMG and drag Blackout to Applications.
 
 ## Settings
 
@@ -43,6 +43,12 @@ No permissions. No dock icon. Just a lightbulb in your menu bar.
 | Sensitivity | 0.10g | 0.02-0.50g |
 | Tap window | 200ms | 200-800ms |
 | Cooldown | 0.3s | 0.3-3.0s |
+
+## macOS 26+ Notice
+
+Apple's March 2026 Rapid Security Response (macOS 26.3.1) blocks third-party access to the built-in accelerometer at the kernel level. Tap detection is currently unavailable on macOS 26.3.1 and later. The keyboard shortcut works as expected on all macOS versions.
+
+If Apple restores accelerometer access in a future update, tap detection will work again automatically — no app update needed.
 
 ## Compatibility
 
