@@ -15,6 +15,9 @@ v1.1.0 · macOS 14.6+ · Apple Silicon
 
 ---
 
+> [!WARNING]
+> **Tap detection is currently broken on macOS 26.3.1+.** Apple's March 2026 security update blocks accelerometer access at the kernel level. The keyboard shortcut still works. If Apple restores access, tap detection will resume automatically.
+
 ![Blackout](screenshot.png)
 
 Blackout uses the built-in accelerometer on Apple Silicon MacBooks to detect physical taps on the chassis. Tap to kill your screen. Tap again to bring it back.
@@ -43,12 +46,6 @@ No permissions. No dock icon. Just a lightbulb in your menu bar.
 | Sensitivity | 0.10g | 0.02-0.50g |
 | Tap window | 200ms | 200-800ms |
 | Cooldown | 0.3s | 0.3-3.0s |
-
-## macOS 26+ Notice
-
-Apple's March 2026 Rapid Security Response (macOS 26.3.1) blocks third-party access to the built-in accelerometer at the kernel level. Tap detection is currently unavailable on macOS 26.3.1 and later. The keyboard shortcut works as expected on all macOS versions.
-
-If Apple restores accelerometer access in a future update, tap detection will work again automatically — no app update needed.
 
 ## Compatibility
 
